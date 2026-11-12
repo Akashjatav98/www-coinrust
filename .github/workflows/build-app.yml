@@ -1,0 +1,74 @@
+name: Build Offline APK and AAB
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Initialize Capacitor and Android Project
+      run: |
+        npm init -y
+        npm install @capacitor/core @capacitor/cli @capacitor/android
+        npx cap init "Coin Rush" "com.coinakash.coinrush" --web-dir www
+        npx cap add android
+
+    - name: Make App Full Screen (Hide Status Bar)
+      run: |
+        cat << 'EOF' > android/app/src/main/res/values/styles.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <resources>
+            <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+                <item name="android:windowFullscreen">true</item>
+                <item name="android:windowContentOverlay">@null</item>
+            </style>
+            <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+                <item name="android:background">@drawable/splash</item>
+            </style>
+        </resources>
+        EOF
+
+    - name: Sync Web Code to Android
+      run: npx cap sync android
+
+    - name: Build Debug APK
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug
+
+    - name: Build Release AAB
+      run: |
+        cd android
+        ./gradlew bundleRelease
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: CoinRush-APK
+        path: android/app/build/outputs/apk/debug/*.apk
+
+    - name: Upload AAB
+      uses: actions/upload-artifact@v4
+      with:
+        name: CoinRush-AAB
+        path: android/app/build/outputs/bundle/release/*.aab
+        
