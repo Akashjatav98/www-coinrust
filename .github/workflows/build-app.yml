@@ -27,9 +27,15 @@ jobs:
     - name: Initialize Capacitor and Android Project
       run: |
         npm init -y
-        npm install @capacitor/core @capacitor/cli @capacitor/android
+        npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets
         npx cap init "Coin Rush" "com.coinakash.coinrush" --web-dir www
         npx cap add android
+
+    - name: Generate Custom App Icon
+      run: |
+        mkdir -p assets
+        cp icon-512.png assets/icon.png
+        npx capacitor-assets generate --android
 
     - name: Make App Full Screen (Hide Status Bar)
       run: |
